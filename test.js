@@ -17,6 +17,17 @@ var subDir = 'subdir';
 var subTestPath = testDir + path.sep + subDir + path.sep + testFile;
 
 describe('gulp-symlink', function() {
+    it('should throw if no directory was specified', function(cb) {
+        var stream = symlink();
+        try {
+            stream.write(new gutil.File({
+                path: process.cwd() + path.sep + testFile
+            }));
+        } catch (e) {
+            expect(e.toString()).to.contain.string('A destination folder is required.');
+            cb();
+        }
+    });
     it('should create symlinks', function(cb) {
         var stream = symlink(testDir);
 

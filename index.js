@@ -10,6 +10,9 @@ var map  = require('map-stream'),
 module.exports = function() {
     var out = arguments[0];
     return map(function(file, cb) {
+        if (typeof out === 'undefined') {
+            cb(new Error('gulp-symlink: A destination folder is required.'));
+        }
         var dest = process.cwd() + path.sep + out;
         var sym = path.resolve(file.path, dest) + path.sep + path.basename(file.path);
         try {
