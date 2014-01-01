@@ -28,14 +28,14 @@ module.exports = function() {
                 }
                 catch (e) {
                     if (e.code !== 'EEXIST') {
-                        cb('gulp-symlink: ' + e);
+                        cb(new Error('gulp-symlink: ' + e));
                     }
                 }
                 // Close one... but all is well
                 cb(null, file);
             } else if (e.code !== 'EEXIST') {
                 // Fail if we caught another error (other than the symlink already exists)
-                cb('gulp-symlink: ' + e);
+                cb(new Error('gulp-symlink: ' + e));
             }
         }
     });
