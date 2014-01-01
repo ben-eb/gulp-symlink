@@ -2,7 +2,7 @@
 
 'use strict';
 
-var map  = require('event-stream').map,
+var map  = require('map-stream'),
     path = require('path'),
     mkdirp = require('mkdirp').sync,
     fs   = require('fs');
