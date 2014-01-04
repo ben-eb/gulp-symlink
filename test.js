@@ -1,6 +1,6 @@
 /* jshint node: true */
 /* jshint expr:true */
-/* global describe, it, before, beforeEach, after, afterEach */
+/* global describe, it, after */
 
 'use strict';
 
@@ -31,7 +31,7 @@ describe('gulp-symlink', function() {
     it('should create symlinks', function(cb) {
         var stream = symlink(testDir);
 
-        stream.on('data', function(data) {
+        stream.on('data', function() {
             expect(fs.existsSync(testPath)).to.be.true;
             expect(fs.lstatSync(testPath).isSymbolicLink()).to.be.true;
             cb();
@@ -44,7 +44,7 @@ describe('gulp-symlink', function() {
     it('should create symlinks in nested directories', function(cb) {
         var stream = symlink(testDir + path.sep + subDir);
 
-        stream.on('data', function(data) {
+        stream.on('data', function() {
             expect(fs.existsSync(subTestPath)).to.be.true;
             expect(fs.lstatSync(subTestPath).isSymbolicLink()).to.be.true;
             cb();
