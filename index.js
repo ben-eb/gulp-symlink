@@ -13,8 +13,9 @@ module.exports = function() {
         if (typeof out === 'undefined') {
             cb(new Error('gulp-symlink: A destination folder is required.'));
         }
-        var dest = process.cwd() + path.sep + out;
+        var dest = process.cwd() + path.sep + out + path.sep + path.dirname(path.relative(file.base, file.path));
         var sym = path.resolve(file.path, dest) + path.sep + path.basename(file.path);
+
         try {
             fs.symlinkSync(file.path, sym);
             // That was easy!
