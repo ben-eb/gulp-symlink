@@ -1,6 +1,6 @@
 {
   "name": "gulp-symlink",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Create symlinks during your gulp build.",
   "license": "MIT",
   "homepage": "https://github.com/ben-eb/gulp-symlink",
