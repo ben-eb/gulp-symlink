@@ -12,7 +12,7 @@ npm install gulp-symlink --save-dev
 
 ## Example
 
-```
+```js
 var gulp = require('gulp');
 var symlink = require('gulp-symlink');
 
