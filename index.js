@@ -9,7 +9,7 @@ var map = require('map-stream'),
     fs = require('fs');
 
 function relative(filepath) {
-    return gutil.colors.blue(path.relative(process.cwd(), filepath));
+    return gutil.colors.blue(filepath);
 }
 
 module.exports = function(out) {
@@ -18,10 +18,10 @@ module.exports = function(out) {
             cb(new gutil.PluginError('gulp-symlink', 'A destination folder is required.'));
         }
 
-        var dest = path.resolve(file.base, out);
-        var sym = path.join(path.resolve(file.path, dest), path.basename(file.path));
+        var dest = path.resolve(process.cwd(), out);
+        var sym = path.join(path.resolve(file.base, dest), path.basename(file.path));
 
-        gutil.log('symlink', relative(file.path), '->', relative(sym));
+        gutil.log('symlink', relative(sym), '->', relative(file.path));
 
         function finish(err) {
             if (err && err.code !== 'EEXIST') {
