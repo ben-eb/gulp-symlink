@@ -7,14 +7,13 @@ var map  = require('map-stream'),
     mkdirp = require('mkdirp').sync,
     fs   = require('fs');
 
-module.exports = function() {
-    var out = arguments[0];
+module.exports = function(out) {
     return map(function(file, cb) {
         if (typeof out === 'undefined') {
             cb(new Error('gulp-symlink: A destination folder is required.'));
         }
-        var dest = process.cwd() + path.sep + out + path.sep + path.dirname(path.relative(file.base, file.path));
-        var sym = path.resolve(file.path, dest) + path.sep + path.basename(file.path);
+        var dest = path.resolve(file.base, out);
+        var sym = path.join(path.resolve(file.path, dest), path.basename(file.path));
 
         try {
             fs.symlinkSync(file.path, sym);
