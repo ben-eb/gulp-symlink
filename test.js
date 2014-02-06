@@ -10,6 +10,9 @@ var expect = require('chai').expect,
     path = require('path'),
     fs = require('fs');
 
+// silence the log, maybe there's a better way?
+gutil.log = function() {};
+
 describe('gulp-symlink', function() {
     function test(testDir) {
         var testFile = 'index.js';
