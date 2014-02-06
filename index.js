@@ -2,44 +2,47 @@
 
 'use strict';
 
-var map  = require('map-stream'),
+var map = require('map-stream'),
     path = require('path'),
-    mkdirp = require('mkdirp').sync,
-    fs   = require('fs');
+    gutil = require('gulp-util'),
+    mkdirp = require('mkdirp'),
+    fs = require('fs');
+
+function relative(filepath) {
+    return gutil.colors.blue(path.relative(process.cwd(), filepath));
+}
 
 module.exports = function(out) {
     return map(function(file, cb) {
         if (typeof out === 'undefined') {
-            cb(new Error('gulp-symlink: A destination folder is required.'));
+            cb(new gutil.PluginError('gulp-symlink', 'A destination folder is required.'));
         }
+
         var dest = path.resolve(file.base, out);
         var sym = path.join(path.resolve(file.path, dest), path.basename(file.path));
 
-        try {
-            fs.symlinkSync(file.path, sym);
-            // That was easy!
+        gutil.log('symlink', relative(file.path), '->', relative(sym));
+
+        function finish(err) {
+            if (err && err.code !== 'EEXIST') {
+                return cb(new gutil.PluginError('gulp-symlink', err));
+            }
             cb(null, file);
         }
-        catch(e) {
+
+        fs.symlink(file.path, sym, function(err) {
             // Most likely there's no directory there...
-            if (e.code === 'ENOENT') {
+            if (err && err.code === 'ENOENT') {
                 // Recursively make directories in case we want a nested symlink
-                mkdirp(dest);
-                // Retry...
-                try {
-                    fs.symlinkSync(file.path, sym);
-                }
-                catch (e) {
-                    if (e.code !== 'EEXIST') {
-                        cb(new Error('gulp-symlink: ' + e));
+                return mkdirp(dest, function(err) {
+                    if (err) {
+                        return cb(err, file);
                     }
-                }
-                // Close one... but all is well
-                cb(null, file);
-            } else if (e.code !== 'EEXIST') {
-                // Fail if we caught another error (other than the symlink already exists)
-                cb(new Error('gulp-symlink: ' + e));
+                    fs.symlink(file.path, sym, finish);
+                });
             }
-        }
+
+            finish(err);
+        });
     });
 };
