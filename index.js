@@ -8,10 +8,6 @@ var map = require('map-stream'),
     mkdirp = require('mkdirp'),
     fs = require('fs');
 
-function relative(filepath) {
-    return gutil.colors.blue(filepath);
-}
-
 module.exports = function(out) {
     return map(function(file, cb) {
         if (typeof out === 'undefined') {
@@ -21,7 +17,7 @@ module.exports = function(out) {
         var dest = path.resolve(process.cwd(), out);
         var sym = path.join(path.resolve(file.base, dest), path.basename(file.path));
 
-        gutil.log('symlink', relative(sym), '->', relative(file.path));
+        gutil.log('symlink', gutil.colors.magenta(sym), '->', gutil.colors.magenta(file.path));
 
         function finish(err) {
             if (err && err.code !== 'EEXIST') {
@@ -36,7 +32,7 @@ module.exports = function(out) {
                 // Recursively make directories in case we want a nested symlink
                 return mkdirp(dest, function(err) {
                     if (err) {
-                        return cb(err, file);
+                        return cb(new gutil.PluginError('gulp-symlink', err), file);
                     }
                     fs.symlink(file.path, sym, finish);
                 });
