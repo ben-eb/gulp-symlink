@@ -8,6 +8,11 @@ var map = require('map-stream'),
     mkdirp = require('mkdirp'),
     fs = require('fs');
 
+function localPath(absolutePath) {
+    var cwd = process.cwd();
+    return absolutePath.indexOf(cwd) === 0 ? absolutePath.substr(cwd.length + 1) : absolutePath;
+}
+
 module.exports = function(out) {
     return map(function(file, cb) {
         if (typeof out === 'undefined') {
@@ -17,7 +22,7 @@ module.exports = function(out) {
         var dest = path.resolve(process.cwd(), out);
         var sym = path.join(path.resolve(file.base, dest), path.basename(file.path));
 
-        gutil.log('symlink', gutil.colors.magenta(sym), '->', gutil.colors.magenta(file.path));
+        gutil.log('Symlink', gutil.colors.magenta(localPath(sym)), '->', gutil.colors.magenta(localPath(file.path)));
 
         function finish(err) {
             if (err && err.code !== 'EEXIST') {
