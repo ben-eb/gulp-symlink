@@ -24,6 +24,12 @@ gulp.task('default', function() {
 
 ## API
 
-### symlink(destinationString)
+### `symlink(destinationString)`
 
 Pass a string of where you would like the symlink(s) to go.
+
+### `symlink(targetDir, rename)`
+
+Symlinks each file in the stream into `targetDir` renaming it according to
+`rename`. This function takes the source filename as its single parameter
+and should return the desired target filename.
