@@ -13,14 +13,21 @@ function localPath(absolutePath) {
     return absolutePath.indexOf(cwd) === 0 ? absolutePath.substr(cwd.length + 1) : absolutePath;
 }
 
-module.exports = function(out) {
+module.exports = function(out, rename) {
     return map(function(file, cb) {
         if (typeof out === 'undefined') {
             cb(new gutil.PluginError('gulp-symlink', 'A destination folder is required.'));
         }
 
+        var sourceName = path.basename(file.path);
+        var targetName = null;
+
+        if (typeof rename === 'function') {
+            targetName = rename(sourceName);
+        }
+
         var dest = path.resolve(process.cwd(), out);
-        var sym = path.join(path.resolve(file.base, dest), path.basename(file.path));
+        var sym = path.join(path.resolve(file.base, dest), targetName || sourceName);
 
         gutil.log('Symlink', gutil.colors.magenta(localPath(sym)), '->', gutil.colors.magenta(localPath(file.path)));
 

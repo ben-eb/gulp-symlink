@@ -17,6 +17,10 @@ describe('gulp-symlink', function() {
     function test(testDir) {
         var testFile = 'index.js';
         var testPath = path.join(testDir, testFile);
+
+        var newName = 'renamed-link.js';
+        var newTestPath = path.join(testDir, newName);
+
         var subDir = 'subdir';
         var subTestPath = path.join(testDir, subDir, testFile);
 
@@ -44,6 +48,23 @@ describe('gulp-symlink', function() {
                 path: path.join(process.cwd(), testFile)
             }));
         });
+
+        it('should create symlinks with the specified name', function(cb) {
+
+            var stream = symlink(testDir, function (name) {
+                return newName;
+            });
+
+            stream.on('data', function() {
+                expect(fs.existsSync(newTestPath)).to.be.true;
+                expect(fs.lstatSync(newTestPath).isSymbolicLink()).to.be.true;
+                cb();
+            });
+
+            stream.write(new gutil.File({
+                path: path.join(process.cwd(), testFile)
+            }));
+        });
         it('should create symlinks in nested directories', function(cb) {
             var stream = symlink(path.join(testDir, subDir));
 
@@ -61,6 +82,7 @@ describe('gulp-symlink', function() {
             fs.unlinkSync(subTestPath);
             fs.rmdirSync(path.join(testDir, subDir));
             fs.unlinkSync(testPath);
+            fs.unlinkSync(newTestPath);
             fs.rmdirSync(testDir);
         });
     }
