@@ -21,6 +21,9 @@ describe('gulp-symlink', function() {
         var newName = 'renamed-link.js';
         var newTestPath = path.join(testDir, newName);
 
+        var newName2 = 'renamed-link-2.js';
+        var newTestPath2 = path.join(testDir, newName2);
+
         var subDir = 'subdir';
         var subTestPath = path.join(testDir, subDir, testFile);
 
@@ -48,12 +51,23 @@ describe('gulp-symlink', function() {
                 path: path.join(process.cwd(), testFile)
             }));
         });
-
-        it('should create symlinks with the specified name', function(cb) {
-
+        it('should create symlinks renamed as specified', function(cb) {
             var stream = symlink(testDir, function (name) {
                 return newName;
             });
+
+            stream.on('data', function() {
+                expect(fs.existsSync(newTestPath)).to.be.true;
+                expect(fs.lstatSync(newTestPath).isSymbolicLink()).to.be.true;
+                cb();
+            });
+
+            stream.write(new gutil.File({
+                path: path.join(process.cwd(), testFile)
+            }));
+        });
+        it('should create symlinks with the specified name', function(cb) {
+            var stream = symlink(testDir, newName2);
 
             stream.on('data', function() {
                 expect(fs.existsSync(newTestPath)).to.be.true;
@@ -83,6 +97,7 @@ describe('gulp-symlink', function() {
             fs.rmdirSync(path.join(testDir, subDir));
             fs.unlinkSync(testPath);
             fs.unlinkSync(newTestPath);
+            fs.unlinkSync(newTestPath2);
             fs.rmdirSync(testDir);
         });
     }

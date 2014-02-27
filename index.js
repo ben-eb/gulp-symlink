@@ -22,6 +22,9 @@ module.exports = function(out, rename) {
         var sourceName = path.basename(file.path);
         var targetName = null;
 
+        if (typeof rename === 'string') {
+            targetName = rename;
+        }
         if (typeof rename === 'function') {
             targetName = rename(sourceName);
         }
