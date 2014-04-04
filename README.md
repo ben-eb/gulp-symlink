@@ -1,4 +1,4 @@
-# [gulp](https://github.com/wearefractal/gulp)-symlink [![Build Status](https://travis-ci.org/ben-eb/gulp-symlink.png?branch=master)](https://travis-ci.org/ben-eb/gulp-symlink) [![NPM version](https://badge.fury.io/js/gulp-symlink.png)](http://badge.fury.io/js/gulp-symlink) [![Dependency Status](https://gemnasium.com/ben-eb/gulp-symlink.png)](https://gemnasium.com/ben-eb/gulp-symlink)
+# [gulp](https://github.com/wearefractal/gulp)-symlink [![Build Status](https://travis-ci.org/ben-eb/gulp-symlink.svg?branch=master)](https://travis-ci.org/ben-eb/gulp-symlink) [![NPM version](https://badge.fury.io/js/gulp-symlink.png)](http://badge.fury.io/js/gulp-symlink) [![Dependency Status](https://gemnasium.com/ben-eb/gulp-symlink.png)](https://gemnasium.com/ben-eb/gulp-symlink)
 
 > Create symlinks during your gulp build.
 
