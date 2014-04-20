@@ -5,74 +5,71 @@
 'use strict';
 
 var expect = require('chai').expect,
+    rimraf = require('rimraf'),
     gutil  = require('gulp-util'),
-    symlink = require('./index'),
+    symlink = require('./'),
     path = require('path'),
     fs = require('fs');
 
-// silence the log, maybe there's a better way?
-gutil.log = function() {};
+symlink._setDebug(true);
+
+var assertion = function(path, callback) {
+    expect(fs.existsSync(path)).to.be.true;
+    expect(fs.lstatSync(path).isSymbolicLink()).to.be.true;
+    callback();
+};
 
 describe('gulp-symlink', function() {
-    function test(testDir) {
+    function test(testDir, method) {
         var testFile = 'index.js';
         var testPath = path.join(testDir, testFile);
 
-        var newName = 'renamed-link.js';
-        var newTestPath = path.join(testDir, newName);
-
-        var newName2 = 'renamed-link-2.js';
-        var newTestPath2 = path.join(testDir, newName2);
-
-        var subDir = 'subdir';
-        var subTestPath = path.join(testDir, subDir, testFile);
-
         it('should throw if no directory was specified', function(cb) {
-            var stream = symlink();
+            var stream = method();
             try {
                 stream.write(new gutil.File({
                     path: path.join(process.cwd(), testFile)
                 }));
             } catch (e) {
-                expect(e.toString()).to.contain.string('A destination folder is required.');
+                expect(e.toString()).to.contain.string('An output destination is required.');
                 cb();
             }
         });
         it('should create symlinks', function(cb) {
-            var stream = symlink(testDir);
+            var stream = method(testDir);
 
             stream.on('data', function() {
-                expect(fs.existsSync(testPath)).to.be.true;
-                expect(fs.lstatSync(testPath).isSymbolicLink()).to.be.true;
-                cb();
+                assertion(testPath, cb);
             });
 
             stream.write(new gutil.File({
                 path: path.join(process.cwd(), testFile)
             }));
         });
-        it('should create symlinks renamed as specified', function(cb) {
-            var stream = symlink(testDir, function (name) {
-                return newName;
+        it('should create symlinks renamed as a result of a function', function(cb) {
+            var newName = 'renamed-link.js';
+            var newTestPath = path.join(testDir, newName);
+
+            var stream = method(function() {
+                return newTestPath;
             });
 
             stream.on('data', function() {
-                expect(fs.existsSync(newTestPath)).to.be.true;
-                expect(fs.lstatSync(newTestPath).isSymbolicLink()).to.be.true;
-                cb();
+                assertion(newTestPath, cb);
             });
 
             stream.write(new gutil.File({
                 path: path.join(process.cwd(), testFile)
             }));
         });
-        it('should create symlinks with the specified name', function(cb) {
-            var stream = symlink(testDir, newName2);
+        it('should create renamed symlinks', function(cb) {
+            var newName2 = 'renamed-link-2.js';
+            var newTestPath2 = path.join(testDir, newName2);
+
+            var stream = method(testDir + path.sep + newName2);
 
             stream.on('data', function() {
-                expect(fs.existsSync(newTestPath)).to.be.true;
-                expect(fs.lstatSync(newTestPath).isSymbolicLink()).to.be.true;
-                cb();
+                assertion(newTestPath2, cb);
             });
 
             stream.write(new gutil.File({
@@ -80,33 +77,37 @@ describe('gulp-symlink', function() {
             }));
         });
         it('should create symlinks in nested directories', function(cb) {
-            var stream = symlink(path.join(testDir, subDir));
+            var subDir = 'subdir';
+            var subTestPath = path.join(testDir, subDir, testFile);
+
+            var stream = method(path.join(testDir, subDir));
 
             stream.on('data', function() {
-                expect(fs.existsSync(subTestPath)).to.be.true;
-                expect(fs.lstatSync(subTestPath).isSymbolicLink()).to.be.true;
-                cb();
+                assertion(subTestPath, cb);
             });
 
             stream.write(new gutil.File({
                 path: path.join(process.cwd(), testFile)
             }));
         });
-        after(function() {
-            fs.unlinkSync(subTestPath);
-            fs.rmdirSync(path.join(testDir, subDir));
-            fs.unlinkSync(testPath);
-            fs.unlinkSync(newTestPath);
-            fs.unlinkSync(newTestPath2);
-            fs.rmdirSync(testDir);
+        after(function(cb) {
+            rimraf(testDir, cb);
         });
     }
 
-    describe('using relative path', function() {
-        test('test');
+    describe('using relative paths & relative symlinks', function() {
+        test('test', symlink.relative);
     });
 
-    describe('using full path', function() {
-        test(__dirname + '/test');
+    describe('using full paths & relative symlinks', function() {
+        test(__dirname + '/test', symlink.relative);
+    });
+
+    describe('using relative paths & absolute symlinks', function() {
+        test('test', symlink.absolute);
+    });
+
+    describe('using full paths & absolute symlinks', function() {
+        test(__dirname + '/test', symlink.absolute);
     });
 });

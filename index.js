@@ -2,58 +2,87 @@
 
 'use strict';
 
-var map = require('map-stream'),
-    path = require('path'),
-    gutil = require('gulp-util'),
-    mkdirp = require('mkdirp'),
-    fs = require('fs');
+var through     = require('through2'),
+    mkdirp      = require('mkdirp'),
+    gutil       = require('gulp-util'),
+    path        = require('path'),
+    fs          = require('fs'),
+
+    PLUGIN_NAME = 'gulp-symlink';
 
 function localPath(absolutePath) {
     var cwd = process.cwd();
     return absolutePath.indexOf(cwd) === 0 ? absolutePath.substr(cwd.length + 1) : absolutePath;
 }
 
-module.exports = function(out, rename) {
-    return map(function(file, cb) {
-        if (typeof out === 'undefined') {
-            cb(new gutil.PluginError('gulp-symlink', 'A destination folder is required.'));
+var symlinker = function(symlink, resolver) {
+    return through.obj(function(file, encoding, cb) {
+        var self = this,
+            sym  = null;
+
+        if (typeof symlink === 'undefined') {
+            this.emit('error', new gutil.PluginError(PLUGIN_NAME, 'An output destination is required.'));
+            return cb();
+        } else if (typeof symlink === 'function') {
+            symlink = symlink(file);
         }
 
-        var sourceName = path.basename(file.path);
-        var targetName = null;
+        var destination = resolver.call(this, process.cwd(), symlink);
 
-        if (typeof rename === 'string') {
-            targetName = rename;
+        // Check whether the destination is a directory
+        if (path.extname(symlink) === '') {
+            sym = path.join(destination, path.basename(file.path));
+        } else {
+            sym = destination;
+            destination = destination.replace(path.basename(destination), '');
         }
-        if (typeof rename === 'function') {
-            targetName = rename(sourceName);
-        }
 
-        var dest = path.resolve(process.cwd(), out);
-        var sym = path.join(path.resolve(file.base, dest), targetName || sourceName);
+        var source = resolver.call(this, destination, file.path);
 
-        gutil.log('Symlink', gutil.colors.magenta(localPath(sym)), '->', gutil.colors.magenta(localPath(file.path)));
-
-        function finish(err) {
+        var finish = function(err) {
             if (err && err.code !== 'EEXIST') {
-                return cb(new gutil.PluginError('gulp-symlink', err));
+                self.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
+                return cb();
             }
-            cb(null, file);
-        }
+            self.push(file);
+            if (symlinker.prototype.debug === false) {
+                gutil.log('Symlink', gutil.colors.magenta(localPath(sym)), '->', gutil.colors.magenta(localPath(file.path)));
+            }
+            cb();
+        };
 
-        fs.symlink(file.path, sym, function(err) {
+        fs.symlink(source, sym, function(err) {
             // Most likely there's no directory there...
             if (err && err.code === 'ENOENT') {
                 // Recursively make directories in case we want a nested symlink
-                return mkdirp(dest, function(err) {
+                return mkdirp(destination, function(err) {
                     if (err) {
-                        return cb(new gutil.PluginError('gulp-symlink', err), file);
+                        self.emit('error', new gutil.PluginError(PLUGIN_NAME, err), file);
+                        return cb();
                     }
-                    fs.symlink(file.path, sym, finish);
+                    fs.symlink(source, sym, finish);
                 });
             }
-
             finish(err);
         });
     });
 };
+
+var relativesymlinker = function(symlink) {
+    return symlinker(symlink, path.relative);
+};
+
+var absolutesymlinker = function(symlink) {
+    return symlinker(symlink, path.resolve);
+};
+
+var _setDebug = function(value) {
+    symlinker.prototype.debug = value;
+};
+
+// Expose main functionality under relative, for convenience
+
+module.exports           = relativesymlinker;
+module.exports.relative  = relativesymlinker;
+module.exports.absolute  = absolutesymlinker;
+module.exports._setDebug = _setDebug;
