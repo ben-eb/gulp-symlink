@@ -4,12 +4,12 @@
 
 'use strict';
 
-var expect = require('chai').expect,
-    rimraf = require('rimraf'),
-    gutil  = require('gulp-util'),
+var expect  = require('chai').expect,
+    rimraf  = require('rimraf'),
+    gutil   = require('gulp-util'),
     symlink = require('./'),
-    path = require('path'),
-    fs = require('fs');
+    path    = require('path'),
+    fs      = require('fs');
 
 symlink._setDebug(true);
 

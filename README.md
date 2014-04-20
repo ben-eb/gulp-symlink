@@ -19,7 +19,7 @@ var gulp = require('gulp');
 var symlink = require('gulp-symlink');
 
 gulp.task('default', function() {
-    gulp.src('assets/some-large-video.mp4')
+    return gulp.src('assets/some-large-video.mp4')
         .pipe(symlink('build/videos')) // Write to the destination folder
         .pipe(symlink('build/videos/renamed-video.mp4')) // Write a renamed symlink to the destination folder
 });
@@ -33,11 +33,13 @@ Pass a `string` or a `function` to create the symlink. The function is passed th
 
 ```js
 var path = require('path');
+
 gulp.task('symlink', function() {
-    gulp.src('assets/some-large-video.mp4')
+    return gulp.src('assets/some-large-video.mp4')
         .pipe(symlink(function(file) {
             return path.join(file.base, 'build', file.relative.replace('some-large', ''));
         }));
+});
 ```
 
 The string options work in the same way. If you pass a string like 'build/videos', the symlink will be created in that directory. If you pass 'build/videos/video.mp4', the symlink will also be renamed.
