@@ -46,7 +46,7 @@ var symlinker = function(symlink, resolver) {
             }
             self.push(file);
             if (symlinker.prototype.debug === false) {
-                gutil.log('Symlink', gutil.colors.magenta(localPath(sym)), '->', gutil.colors.magenta(localPath(file.path)));
+                gutil.log(gutil.colors.magenta(localPath(file.path)), 'symlinked to', gutil.colors.magenta(localPath(sym)));
             }
             cb();
         };
@@ -79,6 +79,8 @@ var absolutesymlinker = function(symlink) {
 var _setDebug = function(value) {
     symlinker.prototype.debug = value;
 };
+
+_setDebug(false);
 
 // Expose main functionality under relative, for convenience
 
