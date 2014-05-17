@@ -45,7 +45,7 @@ var symlinker = function(symlink, resolver) {
                 return cb();
             }
             self.push(file);
-            if (symlinker.prototype.debug === false) {
+            if (symlinker.prototype.debug === true) {
                 gutil.log(gutil.colors.magenta(localPath(file.path)), 'symlinked to', gutil.colors.magenta(localPath(sym)));
             }
             cb();
