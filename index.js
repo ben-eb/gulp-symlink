@@ -23,14 +23,16 @@ var symlinker = function(symlink, resolver) {
         if (typeof symlink === 'undefined') {
             this.emit('error', new gutil.PluginError(PLUGIN_NAME, 'An output destination is required.'));
             return cb();
-        } else if (typeof symlink === 'function') {
-            symlink = symlink(file);
         }
 
-        var destination = resolver.call(this, process.cwd(), symlink);
+        var out = function(file) {
+            return (typeof symlink === 'string') ? symlink : symlink(file);
+        };
+
+        var destination = resolver.call(this, process.cwd(), out(file));
 
         // Check whether the destination is a directory
-        if (path.extname(symlink) === '') {
+        if (path.extname(out(file)) === '') {
             sym = path.join(destination, path.basename(file.path));
         } else {
             sym = destination;
