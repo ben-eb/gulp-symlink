@@ -113,7 +113,7 @@ describe('gulp-symlink', function() {
             stream.write(fileTwo);
             stream.end();
         });
-        after(function(cb) {
+        afterEach(function(cb) {
             rimraf(testDir, cb);
         });
     }

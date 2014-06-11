@@ -15,57 +15,53 @@ function localPath(absolutePath) {
     return absolutePath.indexOf(cwd) === 0 ? absolutePath.substr(cwd.length + 1) : absolutePath;
 }
 
-var symlinker = function(symlink, resolver) {
+var symlinker = function(destination, resolver) {
     return through.obj(function(file, encoding, cb) {
-        var self = this,
-            sym  = null;
+        var self = this, symlink;
 
-        if (typeof symlink === 'undefined') {
+        if (typeof destination === 'undefined') {
             this.emit('error', new gutil.PluginError(PLUGIN_NAME, 'An output destination is required.'));
             return cb();
         }
 
-        var out = function(file) {
-            return (typeof symlink === 'string') ? symlink : symlink(file);
-        };
+        // Resolve the path to the original file
+        file.path = path.resolve(file.cwd, file.path);
 
-        var destination = resolver.call(this, process.cwd(), out(file));
+        // Is the destination path a string or function?
+        symlink = typeof destination === 'string' ? destination : destination(file);
 
-        // Check whether the destination is a directory
-        if (path.extname(out(file)) === '') {
-            sym = path.join(destination, path.basename(file.path));
-        } else {
-            sym = destination;
-            destination = destination.replace(path.basename(destination), '');
+        // Convert the destination path to a new vinyl instance
+        symlink = symlink instanceof gutil.File ? symlink : new gutil.File({ path: symlink });
+
+        // Resolve the path to the symlink
+        symlink.path = resolver.call(this, symlink.cwd, symlink.path);
+
+        // Add the file path onto the symlink path if it is a directory
+        if (path.extname(symlink.path) === '') {
+            symlink.path = path.join(symlink.path, path.basename(file.path));
         }
 
-        var source = resolver.call(this, destination, file.path);
-
-        var finish = function(err) {
-            if (err && err.code !== 'EEXIST') {
+        // Create the output folder for the symlink
+        mkdirp(path.dirname(symlink.path), function(err) {
+            if (err) {
                 self.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
                 return cb();
             }
-            self.push(file);
-            if (symlinker.prototype.debug === false) {
-                gutil.log(gutil.colors.magenta(localPath(file.path)), 'symlinked to', gutil.colors.magenta(localPath(sym)));
-            }
-            cb();
-        };
-
-        fs.symlink(source, sym, function(err) {
-            // Most likely there's no directory there...
-            if (err && err.code === 'ENOENT') {
-                // Recursively make directories in case we want a nested symlink
-                return mkdirp(destination, function(err) {
+            // Check whether the source file is a directory or not
+            fs.stat(file.path, function(err, stat) {
+                // Create the symlink
+                fs.symlink(file.path, symlink.path, stat.isDirectory() ? 'dir' : 'file', function(err) {
                     if (err) {
-                        self.emit('error', new gutil.PluginError(PLUGIN_NAME, err), file);
+                        self.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
                         return cb();
                     }
-                    fs.symlink(source, sym, finish);
+                    if (symlinker.prototype.debug === false) {
+                        gutil.log(gutil.colors.magenta(localPath(file.path)), 'symlinked to', gutil.colors.magenta(localPath(symlink.path)));
+                    }
+                    self.push(file);
+                    cb();
                 });
-            }
-            finish(err);
+            });
         });
     });
 };
