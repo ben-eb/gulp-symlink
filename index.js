@@ -48,7 +48,7 @@ var symlinker = function(symlink, resolver) {
             }
             self.push(file);
             if (symlinker.prototype.debug === false) {
-                gutil.log(gutil.colors.magenta(localPath(file.path)), 'symlinked to', gutil.colors.magenta(localPath(sym)));
+                gutil.log(gutil.colors.magenta(localPath(sym)), 'symlinked to', gutil.colors.magenta(localPath(file.path)));
             }
             cb();
         };
