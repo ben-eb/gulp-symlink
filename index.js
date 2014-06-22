@@ -25,7 +25,7 @@ var symlinker = function(destination, resolver) {
         }
 
         // Resolve the path to the original file
-        file.path = path.resolve(file.cwd, file.path);
+        file.path = resolver.call(this, file.cwd, file.path);
 
         // Is the destination path a string or function?
         symlink = typeof destination === 'string' ? destination : destination(file);

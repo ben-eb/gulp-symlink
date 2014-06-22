@@ -1,6 +1,6 @@
 /* jshint node: true */
 /* jshint expr:true */
-/* global describe, it, after */
+/* global describe, it, afterEach, beforeEach */
 
 'use strict';
 
@@ -13,14 +13,25 @@ var expect  = require('chai').expect,
 
 symlink._setDebug(true);
 
-var assertion = function(path, callback) {
-    expect(fs.existsSync(path)).to.be.true;
-    expect(fs.lstatSync(path).isSymbolicLink()).to.be.true;
-    callback && callback();
+/**
+ * Expect that we created a symlink which contains the desired link text;
+ * i.e. whether it is relative or absolute
+ * @param  {String}   fpath      Path to the symlink
+ * @param  {Function}   pathMethod A method passed in to compare the cwd to the linked path
+ * @param  {Function} callback   Call the callback when we're done
+ */
+var assertion = function(fpath, pathMethod, callback) {
+    fs.lstat(fpath, function(err, stats) {
+        expect(stats.isSymbolicLink()).to.be.true;
+        fs.readlink(fpath, function(err, link) {
+            expect(link).to.equal(pathMethod(process.cwd(), link));
+            callback && callback();
+        });
+    });
 };
 
 describe('gulp-symlink', function() {
-    function test(testDir, method) {
+    function test(testDir, method, pathMethod) {
         var testFile = 'index.js';
         var testPath = path.join(testDir, testFile);
 
@@ -43,7 +54,7 @@ describe('gulp-symlink', function() {
             var stream = method(testDir);
 
             stream.on('data', function() {
-                assertion(testPath, cb);
+                assertion(testPath, pathMethod, cb);
             });
 
             stream.write(this.gutilFile);
@@ -57,7 +68,7 @@ describe('gulp-symlink', function() {
             });
 
             stream.on('data', function() {
-                assertion(newTestPath, cb);
+                assertion(newTestPath, pathMethod, cb);
             });
 
             stream.write(this.gutilFile);
@@ -69,7 +80,7 @@ describe('gulp-symlink', function() {
             var stream = method(testDir + path.sep + newName2);
 
             stream.on('data', function() {
-                assertion(newTestPath2, cb);
+                assertion(newTestPath2, pathMethod, cb);
             });
 
             stream.write(this.gutilFile);
@@ -81,7 +92,7 @@ describe('gulp-symlink', function() {
             var stream = method(path.join(testDir, subDir));
 
             stream.on('data', function() {
-                assertion(subTestPath, cb);
+                assertion(subTestPath, pathMethod, cb);
             });
 
             stream.write(this.gutilFile);
@@ -97,13 +108,13 @@ describe('gulp-symlink', function() {
 
             var fileTwo = new gutil.File({
                 path: path.join(process.cwd(), 'README.md')
-            })
+            });
 
             stream.on('data', function(sym) {
                 if (sym === fileOne) {
-                    assertion(path.join(testDir, 'test.js'));
+                    assertion(path.join(testDir, 'test.js'), pathMethod);
                 } else {
-                    assertion(path.join(testDir, 'README.md'));
+                    assertion(path.join(testDir, 'README.md'), pathMethod);
                 }
             });
 
@@ -119,18 +130,18 @@ describe('gulp-symlink', function() {
     }
 
     describe('using relative paths & relative symlinks', function() {
-        test('test', symlink.relative);
+        test('test', symlink.relative, path.relative);
     });
 
     describe('using full paths & relative symlinks', function() {
-        test(__dirname + '/test', symlink.relative);
+        test(__dirname + '/test', symlink.relative, path.relative);
     });
 
     describe('using relative paths & absolute symlinks', function() {
-        test('test', symlink.absolute);
+        test('test', symlink.absolute, path.resolve);
     });
 
     describe('using full paths & absolute symlinks', function() {
-        test(__dirname + '/test', symlink.absolute);
+        test(__dirname + '/test', symlink.absolute, path.resolve);
     });
 });
