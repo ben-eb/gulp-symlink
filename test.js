@@ -41,14 +41,15 @@ describe('gulp-symlink', function() {
             });
         });
 
-        it('should throw if no directory was specified', function(cb) {
+        it('should emit an error if no directory was specified', function() {
             var stream = method();
-            try {
-                stream.write(this.gutilFile);
-            } catch (e) {
-                expect(e.toString()).to.contain.string('An output destination is required.');
-                cb();
-            }
+
+            stream.on('error', function(err) {
+                expect(err instanceof gutil.PluginError).to.be.true;
+                expect(err.toString()).to.contain.string('An output destination is required.');
+            });
+
+            stream.write(this.gutilFile);
         });
         it('should create symlinks', function(cb) {
             var stream = method(testDir);
