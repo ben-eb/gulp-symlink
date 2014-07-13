@@ -40,6 +40,9 @@ describe('gulp-symlink', function() {
             this.gutilFile = new gutil.File({
                 path: path.join(process.cwd(), testFile)
             });
+            this.gutilFileTwo = new gutil.File({
+                path: path.join(process.cwd(), 'README.md')
+            });
         });
 
         it('should emit an error if no directory was specified', function() {
@@ -119,26 +122,18 @@ describe('gulp-symlink', function() {
                 return path.join(testDir, file.relative);
             });
 
-            var fileOne = new gutil.File({
-                path: path.join(process.cwd(), 'test.js')
-            });
-
-            var fileTwo = new gutil.File({
-                path: path.join(process.cwd(), 'README.md')
-            });
-
             stream.on('data', function(sym) {
-                if (sym === fileOne) {
-                    assertion(fileOne.path, path.join(testDir, 'test.js'), pathMethod);
+                if (sym === this.gutilFile) {
+                    assertion(this.gutilFile.path, path.join(testDir, testFile), pathMethod);
                 } else {
-                    assertion(fileTwo.path, path.join(testDir, 'README.md'), pathMethod);
+                    assertion(this.gutilFileTwo.path, path.join(testDir, 'README.md'), pathMethod);
                 }
-            });
+            }.bind(this));
 
             stream.on('end', cb);
 
-            stream.write(fileOne);
-            stream.write(fileTwo);
+            stream.write(this.gutilFile);
+            stream.write(this.gutilFileTwo);
             stream.end();
         });
         afterEach(function(cb) {
