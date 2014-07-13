@@ -41,17 +41,15 @@ var symlinker = function(destination, resolver) {
             symlink.path = path.join(symlink.path, path.basename(file.path));
         }
 
-        // Create the output folder for the symlink
-        mkdirp(path.dirname(symlink.path), function(err) {
-            if (err) {
-                self.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
-                return cb();
-            }
+        // Variable to contain the diff between the original path and the new symlink
+        var out = resolver.call(this, path.dirname(symlink.path), file.path);
+
+        var finish = function() {
             // Check whether the source file is a directory or not
             fs.stat(file.path, function(err, stat) {
                 // Create the symlink
-                fs.symlink(file.path, symlink.path, stat.isDirectory() ? 'dir' : 'file', function(err) {
-                    if (err) {
+                fs.symlink(out, symlink.path, stat.isDirectory() ? 'dir' : 'file', function(err) {
+                    if (err && err.code !== 'EEXIST') {
                         self.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
                         return cb();
                     }
@@ -62,6 +60,21 @@ var symlinker = function(destination, resolver) {
                     cb();
                 });
             });
+        };
+
+        fs.exists(path.dirname(symlink.path), function(exists) {
+            if (! exists) {
+                // If it doesn't exist, create the output folder for the symlink
+                mkdirp(path.dirname(symlink.path), function(err) {
+                    if (err) {
+                        self.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
+                        return cb();
+                    }
+                    finish();
+                });
+            } else {
+                finish();
+            }
         });
     });
 };

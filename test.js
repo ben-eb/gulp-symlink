@@ -16,15 +16,16 @@ symlink._setDebug(true);
 /**
  * Expect that we created a symlink which contains the desired link text;
  * i.e. whether it is relative or absolute
- * @param  {String}   fpath      Path to the symlink
- * @param  {Function}   pathMethod A method passed in to compare the cwd to the linked path
- * @param  {Function} callback   Call the callback when we're done
+ * @param  {string}   originalPath The original file's path
+ * @param  {string}   symlinkPath  The symlink's path
+ * @param  {Function} resolver     Method to check that the link between the files is accurate
+ * @param  {Function} callback     Call this when we're done, if specified
  */
-var assertion = function(fpath, pathMethod, callback) {
-    fs.lstat(fpath, function(err, stats) {
+var assertion = function(originalPath, symlinkPath, resolver, callback) {
+    fs.lstat(symlinkPath, function(err, stats) {
         expect(stats.isSymbolicLink()).to.be.true;
-        fs.readlink(fpath, function(err, link) {
-            expect(link).to.equal(pathMethod(process.cwd(), link));
+        fs.readlink(symlinkPath, function(err, link) {
+            expect(link).to.equal(resolver.call(this, path.dirname(symlinkPath), originalPath));
             callback && callback();
         });
     });
@@ -55,8 +56,8 @@ describe('gulp-symlink', function() {
             var stream = method(testDir);
 
             stream.on('data', function() {
-                assertion(testPath, pathMethod, cb);
-            });
+                assertion(this.gutilFile.path, testPath, pathMethod, cb);
+            }.bind(this));
 
             stream.write(this.gutilFile);
         });
@@ -69,8 +70,8 @@ describe('gulp-symlink', function() {
             });
 
             stream.on('data', function() {
-                assertion(newTestPath, pathMethod, cb);
-            });
+                assertion(this.gutilFile.path, newTestPath, pathMethod, cb);
+            }.bind(this));
 
             stream.write(this.gutilFile);
         });
@@ -81,8 +82,8 @@ describe('gulp-symlink', function() {
             var stream = method(testDir + path.sep + newName2);
 
             stream.on('data', function() {
-                assertion(newTestPath2, pathMethod, cb);
-            });
+                assertion(this.gutilFile.path, newTestPath2, pathMethod, cb);
+            }.bind(this));
 
             stream.write(this.gutilFile);
         });
@@ -93,8 +94,8 @@ describe('gulp-symlink', function() {
             var stream = method(path.join(testDir, subDir));
 
             stream.on('data', function() {
-                assertion(subTestPath, pathMethod, cb);
-            });
+                assertion(this.gutilFile.path, subTestPath, pathMethod, cb);
+            }.bind(this));
 
             stream.write(this.gutilFile);
         });
@@ -113,9 +114,9 @@ describe('gulp-symlink', function() {
 
             stream.on('data', function(sym) {
                 if (sym === fileOne) {
-                    assertion(path.join(testDir, 'test.js'), pathMethod);
+                    assertion(fileOne.path, path.join(testDir, 'test.js'), pathMethod);
                 } else {
-                    assertion(path.join(testDir, 'README.md'), pathMethod);
+                    assertion(fileTwo.path, path.join(testDir, 'README.md'), pathMethod);
                 }
             });
 
