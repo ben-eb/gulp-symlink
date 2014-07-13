@@ -15,9 +15,13 @@ function localPath(absolutePath) {
     return absolutePath.indexOf(cwd) === 0 ? absolutePath.substr(cwd.length + 1) : absolutePath;
 }
 
-var symlinker = function(destination, resolver) {
+var symlinker = function(options, destination, resolver) {
     return through.obj(function(file, encoding, cb) {
         var self = this, symlink;
+
+        if (typeof options !== 'object') {
+            destination = options;
+        }
 
         if (typeof destination === 'undefined') {
             this.emit('error', new gutil.PluginError(PLUGIN_NAME, 'An output destination is required.'));
@@ -47,17 +51,29 @@ var symlinker = function(destination, resolver) {
         var finish = function() {
             // Check whether the source file is a directory or not
             fs.stat(file.path, function(err, stat) {
-                // Create the symlink
-                fs.symlink(out, symlink.path, stat.isDirectory() ? 'dir' : 'file', function(err) {
-                    if (err && err.code !== 'EEXIST') {
-                        self.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
-                        return cb();
+                var create = function() {
+                    // Create the symlink
+                    fs.symlink(out, symlink.path, stat.isDirectory() ? 'dir' : 'file', function(err) {
+                        if (err && err.code !== 'EEXIST') {
+                            self.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
+                            return cb();
+                        }
+                        if (symlinker.prototype.debug === false) {
+                            gutil.log(gutil.colors.magenta(localPath(file.path)), 'symlinked to', gutil.colors.magenta(localPath(symlink.path)));
+                        }
+                        self.push(file);
+                        cb();
+                    });
+                };
+                // Do we override the symlink that is already there?
+                fs.exists(symlink.path, function(exists) {
+                    if (exists && options.overwrite) {
+                        fs.unlink(symlink.path, function() {
+                            create();
+                        });
+                    } else {
+                        create();
                     }
-                    if (symlinker.prototype.debug === false) {
-                        gutil.log(gutil.colors.magenta(localPath(file.path)), 'symlinked to', gutil.colors.magenta(localPath(symlink.path)));
-                    }
-                    self.push(file);
-                    cb();
                 });
             });
         };
@@ -79,12 +95,12 @@ var symlinker = function(destination, resolver) {
     });
 };
 
-var relativesymlinker = function(symlink) {
-    return symlinker(symlink, path.relative);
+var relativesymlinker = function(options, symlink) {
+    return symlinker(options, symlink, path.relative);
 };
 
-var absolutesymlinker = function(symlink) {
-    return symlinker(symlink, path.resolve);
+var absolutesymlinker = function(options, symlink) {
+    return symlinker(options, symlink, path.resolve);
 };
 
 var _setDebug = function(value) {
