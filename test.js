@@ -75,6 +75,21 @@ describe('gulp-symlink', function() {
 
             stream.write(this.gutilFile);
         });
+        it('should create symlinks from functions that return vinyl objects', function(cb) {
+            var packageJSON = new gutil.File({
+                path: path.join(testDir, 'package.json')
+            });
+
+            var stream = method(function() {
+                return packageJSON;
+            });
+
+            stream.on('data', function() {
+                assertion(this.gutilFile.path, packageJSON.path, pathMethod, cb);
+            }.bind(this));
+
+            stream.write(this.gutilFile);
+        });
         it('should create renamed symlinks', function(cb) {
             var newName2 = 'renamed-link-2.js';
             var newTestPath2 = path.join(testDir, newName2);
