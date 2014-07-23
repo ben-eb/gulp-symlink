@@ -7,111 +7,139 @@ var through     = require('through2'),
     gutil       = require('gulp-util'),
     path        = require('path'),
     fs          = require('fs'),
+    PluginError = gutil.PluginError,
+    File        = gutil.File,
+    debug;
 
-    PLUGIN_NAME = 'gulp-symlink';
+var PLUGIN_NAME = 'gulp-symlink';
 
-function localPath(absolutePath) {
-    var cwd = process.cwd();
-    return absolutePath.indexOf(cwd) === 0 ? absolutePath.substr(cwd.length + 1) : absolutePath;
-}
+var log = function() {
 
-var symlinker = function(options, destination, resolver) {
-    return through.obj(function(file, encoding, cb) {
-        var self = this, symlink;
+  if(debug === true) {
+    console.log.apply(console, [].slice.call(arguments));
+    return console.log;
+  } else {
+    return function() { };
+  }
 
-        if (typeof options !== 'object') {
-            destination = options;
+};
+
+var errored = function(error, cb) {
+  this.emit('error', new PluginError(PLUGIN_NAME, error));
+  //Push the file so that the stream is piped to the next task
+  this.push(this.source);
+  return cb();
+};
+
+var symlinker = function(destination, resolver, options) {
+
+  if(typeof resolver === 'object') {
+    options = resolver;
+    resolver = 'absolute';
+  }
+
+  options = typeof options === 'object' ? options : {};
+  options.force = options.force === undefined ? false : options.force;
+
+  //pass the debug value to the through obj
+//  debug = this.debug;
+
+  if( Object.prototype.toString.call( destination ) === '[object Array]' ) {
+    //copy array because we'll shift values
+    var destinations = destination.slice();
+  }
+
+  return through.obj(function(source, encoding, callback) {
+
+    var self = this, symlink;
+
+    this.source = source; //error binding
+
+    //else if we've got an array from before take the next element as a destination path
+    symlink = destinations !== undefined ? destinations.shift() : symlink;
+
+    //if destination is a function pass the source to it
+    symlink = typeof destination === 'function' ? destination(source) : destination;
+
+    //if symlink is still undefined there is a problem!
+    if (symlink === undefined) {
+      return errored.call(self, 'An output destination is required.', callback);
+    }
+
+    // Convert the destination path to a new vinyl instance
+    symlink = symlink instanceof File ? symlink : new File({ path: symlink });
+
+
+    log('Before resolving')('Source: %s – dest: %s', source.path, symlink.path);
+
+    symlink.directory = path.dirname(symlink.path); //this is the parent directory of the symlink
+
+    // Resolve the path to the symlink
+    if(resolver === 'relative' || options.relative === true) {
+      source.resolved = path.relative(symlink.directory, source.path);
+    } else {
+      //resolve from the symlink directory the absolute path from the source. It need to be from the current working directory to handle relative sources
+      source.resolved = path.resolve(symlink.directory, path.join(source.cwd, source.path.replace(source.cwd, '')));
+      //maybe this could be done better like  p.resolve(source.cwd, source.path) ?
+    }
+
+    log('After resolving')(source.resolved + ' in ' + symlink.path);
+
+    var exists = fs.existsSync(symlink.path);
+
+    //No force option, we can't override!
+    if(exists && !options.force) {
+      return errored.call(self, 'Destination file exists ('+destination+') - use force option to replace', callback);
+    } else {
+
+      //remove destination if it exists already
+      if(exists && options.force === true) {
+        fs.unlinkSync(symlink.path);
+      }
+
+      //this is a windows check as specified in http://nodejs.org/api/fs.html#fs_fs_symlink_srcpath_dstpath_type_callback
+      fs.stat(source.path, function(err, stat) {
+
+        if(err) {
+          return errored.call(self, err, callback);
         }
 
-        if (typeof destination === 'undefined') {
-            this.emit('error', new gutil.PluginError(PLUGIN_NAME, 'An output destination is required.'));
-            return cb();
+        source.stat = stat;
+
+        if(!fs.existsSync(symlink.directory)) {
+          mkdirp.sync(symlink.directory);
         }
 
-        // Resolve the path to the original file
-        file.path = resolver.call(this, file.cwd, file.path);
+        fs.symlink(source.resolved, symlink.path, source.stat.isDirectory() ? 'dir' : 'file', function(err) {
 
-        // Is the destination path a string or function?
-        symlink = typeof destination === 'string' ? destination : destination(file);
-
-        // Convert the destination path to a new vinyl instance
-        symlink = symlink instanceof gutil.File ? symlink : new gutil.File({ path: symlink });
-
-        // Resolve the path to the symlink
-        symlink.path = resolver.call(this, symlink.cwd, symlink.path);
-
-        // Add the file path onto the symlink path if it is a directory
-        if (path.extname(symlink.path) === '') {
-            symlink.path = path.join(symlink.path, path.basename(file.path));
-        }
-
-        // Variable to contain the diff between the original path and the new symlink
-        var out = resolver.call(this, path.dirname(symlink.path), file.path);
-
-        var finish = function() {
-            // Check whether the source file is a directory or not
-            fs.stat(file.path, function(err, stat) {
-                var create = function() {
-                    // Create the symlink
-                    fs.symlink(out, symlink.path, stat.isDirectory() ? 'dir' : 'file', function(err) {
-                        if (err && err.code !== 'EEXIST') {
-                            self.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
-                            return cb();
-                        }
-                        if (symlinker.prototype.debug === false) {
-                            gutil.log(gutil.colors.magenta(localPath(file.path)), 'symlinked to', gutil.colors.magenta(localPath(symlink.path)));
-                        }
-                        self.push(file);
-                        cb();
-                    });
-                };
-                // Do we override the symlink that is already there?
-                fs.exists(symlink.path, function(exists) {
-                    if (exists && options.overwrite) {
-                        fs.unlink(symlink.path, function() {
-                            create();
-                        });
-                    } else {
-                        create();
-                    }
-                });
-            });
-        };
-
-        fs.exists(path.dirname(symlink.path), function(exists) {
-            if (! exists) {
-                // If it doesn't exist, create the output folder for the symlink
-                mkdirp(path.dirname(symlink.path), function(err) {
-                    if (err) {
-                        self.emit('error', new gutil.PluginError(PLUGIN_NAME, err));
-                        return cb();
-                    }
-                    finish();
-                });
-            } else {
-                finish();
-            }
+          if(err) {
+            return errored.call(self, err, callback);
+          } else {
+            gutil.log(PLUGIN_NAME + ':' + gutil.colors.magenta(source.path), 'symlinked to', gutil.colors.magenta(symlink.path));
+            self.push(source);
+            return callback();
+          }
         });
-    });
+
+      });
+    }
+
+  });
 };
 
-var relativesymlinker = function(options, symlink) {
-    return symlinker(options, symlink, path.relative);
+var relativesymlinker = function(symlink, options) {
+  return symlinker(symlink, 'relative', options);
 };
 
-var absolutesymlinker = function(options, symlink) {
-    return symlinker(options, symlink, path.resolve);
+var absolutesymlinker = function(symlink, options) {
+  return symlinker(symlink, 'absolute', options);
 };
-
-var _setDebug = function(value) {
-    symlinker.prototype.debug = value;
-};
-
-_setDebug(false);
 
 // Expose main functionality under relative, for convenience
-
 module.exports           = relativesymlinker;
 module.exports.relative  = relativesymlinker;
 module.exports.absolute  = absolutesymlinker;
-module.exports._setDebug = _setDebug;
+
+module.exports._setDebug = function(value) {
+  debug = value;
+};
