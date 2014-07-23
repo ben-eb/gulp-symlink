@@ -13,8 +13,11 @@ var through     = require('through2'),
 
 var PLUGIN_NAME = 'gulp-symlink';
 
+/**
+ * Wrapper to log when debug === true
+ * it's basically a console.log
+ */
 var log = function() {
-
   if(debug === true) {
     console.log.apply(console, [].slice.call(arguments));
     return console.log;
@@ -24,9 +27,15 @@ var log = function() {
 
 };
 
+/**
+ * Error wrapper - this is called in the through context
+ * @param  {Error}   error  The error
+ * @return  {Function} cb    The through callback
+ */
 var errored = function(error, cb) {
   this.emit('error', new PluginError(PLUGIN_NAME, error));
-  //Push the file so that the stream is piped to the next task
+  //Push the file so that the stream is piped to the next task even if it has errored
+  //might be discussed
   this.push(this.source);
   return cb();
 };
@@ -35,15 +44,13 @@ var symlinker = function(destination, resolver, options) {
 
   if(typeof resolver === 'object') {
     options = resolver;
-    resolver = 'absolute';
+    resolver = 'relative';
   }
 
   options = typeof options === 'object' ? options : {};
   options.force = options.force === undefined ? false : options.force;
 
-  //pass the debug value to the through obj
-//  debug = this.debug;
-
+  //Handling array of destinations, this test is because "instance of" isn't safe
   if( Object.prototype.toString.call( destination ) === '[object Array]' ) {
     //copy array because we'll shift values
     var destinations = destination.slice();
@@ -59,7 +66,8 @@ var symlinker = function(destination, resolver, options) {
     symlink = destinations !== undefined ? destinations.shift() : symlink;
 
     //if destination is a function pass the source to it
-    symlink = typeof destination === 'function' ? destination(source) : destination;
+    if(symlink === undefined)
+      symlink = typeof destination === 'function' ? destination(source) : destination;
 
     //if symlink is still undefined there is a problem!
     if (symlink === undefined) {
@@ -69,7 +77,6 @@ var symlinker = function(destination, resolver, options) {
     // Convert the destination path to a new vinyl instance
     symlink = symlink instanceof File ? symlink : new File({ path: symlink });
 
-
     log('Before resolving')('Source: %s – dest: %s', source.path, symlink.path);
 
     symlink.directory = path.dirname(symlink.path); //this is the parent directory of the symlink
@@ -78,9 +85,8 @@ var symlinker = function(destination, resolver, options) {
     if(resolver === 'relative' || options.relative === true) {
       source.resolved = path.relative(symlink.directory, source.path);
     } else {
-      //resolve from the symlink directory the absolute path from the source. It need to be from the current working directory to handle relative sources
-      source.resolved = path.resolve(symlink.directory, path.join(source.cwd, source.path.replace(source.cwd, '')));
-      //maybe this could be done better like  p.resolve(source.cwd, source.path) ?
+      //resolve the absolute path from the source. It need to be from the current working directory to handle relative sources
+      source.resolved =  path.resolve(source.cwd, source.path);
     }
 
     log('After resolving')(source.resolved + ' in ' + symlink.path);
