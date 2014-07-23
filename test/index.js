@@ -10,6 +10,7 @@ var expect  = require('chai').expect,
     symlink = require('../'),
     path    = require('path'),
     fs      = require('fs'),
+    File    = gutil.File,
     testDir = path.join(__dirname, './fixtures');
 
 symlink._setDebug(true);
@@ -61,7 +62,7 @@ describe('gulp-symlink', function() {
     destination = path[pathMethod].call(null, process.cwd(), destination);
 
     beforeEach(function() {
-      this.gutilFile = new gutil.File({
+      this.gutilFile = new File({
           path: source
       });
     });
@@ -128,7 +129,7 @@ describe('gulp-symlink', function() {
     });
 
     it('should create symlinks from functions that return vinyl objects', function(cb) {
-      var file = new gutil.File({
+      var file = new File({
           path: destination+'2'
       });
 
@@ -168,7 +169,7 @@ describe('gulp-symlink', function() {
       stream.write(this.gutilFile);
     });
 
-    after(function(cb) {
+    before(function(cb) {
       rimraf(path.join(testDir, 'links'), cb);
     });
 
@@ -197,7 +198,7 @@ describe('gulp-symlink', function() {
   describe('e2e tests', function() {
 
     it('should symlink through path', function(cb) {
-      var src = new gutil.File({path: path.join(testDir, 'test')}), dest = './fixtures/links/test';
+      var src = new File({path: path.join(testDir, 'test')}), dest = './test/fixtures/links/test';
 
       var stream = symlink(dest, {force: true});
 
@@ -209,9 +210,11 @@ describe('gulp-symlink', function() {
     });
 
     it('should symlink 2 sources to 2 different destinations [array]', function(cb) {
-      var srcs = [path.join(testDir, 'test'), path.join(testDir, 'test_dir')], dests = ['./fixtures/links/test', './fixtures/links/test_dir'];
+      var srcs = [path.join(testDir, 'test'), path.join(testDir, 'test_dir')], dests = ['./test/fixtures/links/test', './test/fixtures/links/test_dir'];
 
       var stream = symlink(dests, {force: true});
+
+      stream.on('data', function() { })
 
       stream.on('end', function() {
         for(var j in dests) {
@@ -221,8 +224,8 @@ describe('gulp-symlink', function() {
         cb();
       });
 
-      stream.write(new gutil.File({path: srcs[0]}));
-      stream.write(new gutil.File({path: srcs[1]}));
+      stream.write(new File({path: srcs[0]}));
+      stream.write(new File({path: srcs[1]}));
       stream.end();
     });
   });
