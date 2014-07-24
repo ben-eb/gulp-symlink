@@ -7,6 +7,7 @@ var through     = require('through2'),
     gutil       = require('gulp-util'),
     path        = require('path'),
     fs          = require('fs'),
+    async       = require('async'),
     PluginError = gutil.PluginError,
     File        = gutil.File,
     debug;
@@ -91,44 +92,68 @@ var symlinker = function(destination, resolver, options) {
 
     log('After resolving')(source.resolved + ' in ' + symlink.path);
 
-    var exists = fs.existsSync(symlink.path);
+    fs.exists(symlink.path, function(exists) {
 
-    //No force option, we can't override!
-    if(exists && !options.force) {
-      return errored.call(self, 'Destination file exists ('+destination+') - use force option to replace', callback);
-    } else {
+      //No force option, we can't override!
+      if(exists && !options.force) {
+        return errored.call(self, 'Destination file exists ('+destination+') - use force option to replace', callback);
+      } else {
 
-      //remove destination if it exists already
-      if(exists && options.force === true) {
-        fs.unlinkSync(symlink.path);
-      }
+        async.waterfall([
+          function(next){
+            //remove destination if it exists already
+            if(exists && options.force === true) {
+              fs.unlink(symlink.path, function(err) {
+                if(err) {
+                  return errored.call(self, err, callback);
+                }
 
-      //this is a windows check as specified in http://nodejs.org/api/fs.html#fs_fs_symlink_srcpath_dstpath_type_callback
-      fs.stat(source.path, function(err, stat) {
+                next();
+              });
+            } else {
+              next();
+            }
+          },
+          //checking if the parent directory exists
+          function(next) {
+            mkdirp(symlink.directory, function(err) {
+              //ignoring directory err if it exists
+              if(err && err.code !== 'EEXIST') {
+                return errored.call(self, err, callback);
+              }
 
-        if(err) {
-          return errored.call(self, err, callback);
-        }
-
-        source.stat = stat;
-
-        if(!fs.existsSync(symlink.directory)) {
-          mkdirp.sync(symlink.directory);
-        }
-
-        fs.symlink(source.resolved, symlink.path, source.stat.isDirectory() ? 'dir' : 'file', function(err) {
-
-          if(err) {
-            return errored.call(self, err, callback);
-          } else {
-            gutil.log(PLUGIN_NAME + ':' + gutil.colors.magenta(source.path), 'symlinked to', gutil.colors.magenta(symlink.path));
-            self.push(source);
-            return callback();
+              next();
+            });
           }
+        ], function () {
+          //this is a windows check as specified in http://nodejs.org/api/fs.html#fs_fs_symlink_srcpath_dstpath_type_callback
+          fs.stat(source.path, function(err, stat) {
+
+            if(err) {
+              return errored.call(self, err, callback);
+            }
+
+            source.stat = stat;
+
+            fs.symlink(source.resolved, symlink.path, source.stat.isDirectory() ? 'dir' : 'file', function(err) {
+
+              if(err) {
+                return errored.call(self, err, callback);
+              } else {
+                gutil.log(PLUGIN_NAME + ':' + gutil.colors.magenta(source.path), 'symlinked to', gutil.colors.magenta(symlink.path));
+                self.push(source);
+                return callback();
+              }
+
+            });
+
+          });
+
         });
 
-      });
-    }
+      }
+
+    });
 
   });
 };
