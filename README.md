@@ -15,54 +15,53 @@ npm install gulp-symlink --save-dev
 ## Example
 
 ```js
-var gulp = require('gulp');
 var symlink = require('gulp-symlink');
 
 gulp.task('default', function() {
-    return gulp.src('assets/some-large-video.mp4')
-        .pipe(symlink('build/videos')) // Write to the destination folder
-        .pipe(symlink('build/videos/renamed-video.mp4')) // Write a renamed symlink to the destination folder
+  return gulp.src('assets/some-large-video.mp4')
+    .pipe(symlink('build/videos')) // Write to the destination folder
+    .pipe(symlink('build/videos/renamed-video.mp4')) // Write a renamed symlink to the destination folder
 });
 ```
 
 ## API
 
-### symlink([options], path) or symlink.relative([options], path)
+### symlink(path, [options]), symlink.relative(path, [options]) or symlink.absolute(path, [options])
 
-Pass a `string` or a `function` to create the symlink. The function is passed the [vinyl](https://github.com/wearefractal/vinyl) object, so you can use `file.base`, `file.path` etc. You may return a string that is the location and or filename of the new symlink, or return a completely new vinyl object if you so wish. For example:
+Pass a `string` or a `function` to create the symlink.
+The function is passed the [vinyl](https://github.com/wearefractal/vinyl) object, so you can use `file.base`, `file.path` etc.
+For example:
 
 ```js
-var path  = require('path');
-var gutil = require('gulp-util');
-
 gulp.task('symlink', function() {
-    return gulp.src('assets/some-large-video.mp4')
-        .pipe(symlink(function(file) {
-            return path.join(file.base, 'build', file.relative.replace('some-large', ''));
-        }));
+  return gulp.src('assets/some-large-video.mp4')
+    .pipe(symlink(function(file) {
+      //here we return a path as string
+      return path.join(file.base, 'build', file.relative.replace('some-large', ''));
+    }));
 });
 
 gulp.task('symlink-vinyl', function() {
-    return gulp.src('assets/some-large-video.mp4')
-        .pipe(symlink(function(file) {
-            return new gutil.File({
-                path: path.join(process.cwd(), 'build/videos/video.mp4')
-            });
-        }));
+  return gulp.src('assets/some-large-video.mp4')
+    .pipe(symlink.absolute(function(file) {
+        //here we return a Vinyl instance
+        return new gutil.File({
+          path: 'build/videos/video.mp4',
+          cwd: process.cwd()
+        }, {force: true});
+    }));
 })
 ```
 
 The string options work in the same way. If you pass a string like 'build/videos', the symlink will be created in that directory. If you pass 'build/videos/video.mp4', the symlink will also be renamed.
+The function will be called as many times as there are sources.
 
-If you would like to overwrite symlinks that have already been created with the plugin, then you can pass an object as the first parameter:
+You might also want to give an array of destination paths:
 
 ```js
-gulp.task('overwrite', function() {
-    return gulp.src('assets/image.jpg')
-        .pipe(symlink({ overwrite: true }, 'build/images'));
+gulp.task('symlink', function() {
+  return gulp.src('modules/assets/', 'modules/client/')
+    .pipe(symlink(['./assets', './client']));
 });
 ```
-
-### symlink.absolute([options], path)
-
-The exact same as `symlink.relative` except this will create an *absolute symlink* instead.
+The default `symlink` performs a relative link. If you want an *absolute symlink* use `symlink.absolute` instead.
