@@ -2,8 +2,6 @@
 
 > Create symlinks during your gulp build.
 
-**NOTE: Breaking changes are introduced in 1.0.0. gulp-symlink has been rewritten with a simpler API, that takes the output directory and renamed file as a single parameter. Existing gulpfiles using the old API will break if this module is substituted for the 0.4.x releases. Please take care to read the new API docs for migrating over from older versions. Thank you.**
-
 ## Installation
 
 Install via [npm](https://npmjs.org/package/gulp-symlink):
@@ -64,4 +62,5 @@ gulp.task('symlink', function() {
     .pipe(symlink(['./assets', './client']));
 });
 ```
+
 The default `symlink` performs a relative link. If you want an *absolute symlink* use `symlink.absolute` instead.
