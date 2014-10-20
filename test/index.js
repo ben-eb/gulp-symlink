@@ -1,6 +1,5 @@
 /* jshint node: true */
-/* jshint expr:true */
-/* global describe, it, afterEach, beforeEach, after */
+/* global describe, it, beforeEach, before */
 
 'use strict';
 
@@ -214,7 +213,7 @@ describe('gulp-symlink', function() {
 
       var stream = symlink(dests, {force: true});
 
-      stream.on('data', function() { })
+      stream.on('data', function() { });
 
       stream.on('end', function() {
         for(var j in dests) {

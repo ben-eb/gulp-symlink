@@ -67,8 +67,9 @@ var symlinker = function(destination, resolver, options) {
     symlink = destinations !== undefined ? destinations.shift() : symlink;
 
     //if destination is a function pass the source to it
-    if(symlink === undefined)
+    if(symlink === undefined) {
       symlink = typeof destination === 'function' ? destination(source) : destination;
+    }
 
     //if symlink is still undefined there is a problem!
     if (symlink === undefined) {
