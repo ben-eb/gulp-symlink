@@ -171,6 +171,7 @@ var absolutesymlinker = function(symlink, options) {
 module.exports           = relativesymlinker;
 module.exports.relative  = relativesymlinker;
 module.exports.absolute  = absolutesymlinker;
+module.exports.File      = File;
 
 module.exports._setDebug = function(value) {
   debug = value;
