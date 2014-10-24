@@ -34,7 +34,7 @@ For example:
 gulp.task('symlink', function() {
   return gulp.src('assets/some-large-video.mp4')
     .pipe(symlink(function(file) {
-      //here we return a path as string
+      // Here we return a path as string
       return path.join(file.base, 'build', file.relative.replace('some-large', ''));
     }));
 });
@@ -42,8 +42,8 @@ gulp.task('symlink', function() {
 gulp.task('symlink-vinyl', function() {
   return gulp.src('assets/some-large-video.mp4')
     .pipe(symlink.absolute(function(file) {
-        //here we return a Vinyl instance
-        return new gutil.File({
+        // Here we return a new Vinyl instance
+        return new symlink.File({
           path: 'build/videos/video.mp4',
           cwd: process.cwd()
         }, {force: true});
@@ -57,10 +57,14 @@ The function will be called as many times as there are sources.
 You might also want to give an array of destination paths:
 
 ```js
-gulp.task('symlink', function() {
+gulp.task('symlink-array', function() {
   return gulp.src('modules/assets/', 'modules/client/')
     .pipe(symlink(['./assets', './client']));
 });
 ```
 
 The default `symlink` performs a relative link. If you want an *absolute symlink* use `symlink.absolute` instead.
+
+### symlink.File
+
+The [vinyl module](https://github.com/wearefractal/vinyl) is exposed here. If you are creating new files with the function as shown above, please use this one.
