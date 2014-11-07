@@ -46,8 +46,8 @@ gulp.task('symlink-vinyl', function() {
         return new symlink.File({
           path: 'build/videos/video.mp4',
           cwd: process.cwd()
-        }, {force: true});
-    }));
+        });
+    }, { force: true }));
 })
 ```
 
