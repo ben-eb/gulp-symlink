@@ -50,6 +50,7 @@ var symlinker = function(destination, resolver, options) {
 
   options = typeof options === 'object' ? options : {};
   options.force = options.force === undefined ? false : options.force;
+  options.log = options.log === undefined ? true : options.log;
 
   //Handling array of destinations, this test is because "instance of" isn't safe
   if( Object.prototype.toString.call( destination ) === '[object Array]' ) {
@@ -141,7 +142,9 @@ var symlinker = function(destination, resolver, options) {
               if(err) {
                 return errored.call(self, err, callback);
               } else {
-                gutil.log(PLUGIN_NAME + ':' + gutil.colors.magenta(source.path), 'symlinked to', gutil.colors.magenta(symlink.path));
+                if (options.log) {
+                  gutil.log(PLUGIN_NAME + ':' + gutil.colors.magenta(source.path), 'symlinked to', gutil.colors.magenta(symlink.path));
+                }
                 self.push(source);
                 return callback();
               }
