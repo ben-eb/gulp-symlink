@@ -58,7 +58,7 @@ You might also want to give an array of destination paths:
 
 ```js
 gulp.task('symlink-array', function() {
-  return gulp.src('modules/assets/', 'modules/client/')
+  return gulp.src(['modules/assets/', 'modules/client/'])
     .pipe(symlink(['./assets', './client']));
 });
 ```
