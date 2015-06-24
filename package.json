@@ -6,35 +6,32 @@
   "homepage": "https://github.com/ben-eb/gulp-symlink",
   "author": {
     "name": "Ben Briggs",
-    "email": "therealbenbriggs@hotmail.com",
+    "email": "beneb.info@gmail.com",
     "url": "http://beneb.info"
   },
   "scripts": {
     "test": "mocha"
   },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/ben-eb/gulp-symlink.git"
-  },
+  "repository": "ben-eb/gulp-symlink",
   "keywords": [
     "gulpplugin",
     "symlink"
   ],
   "dependencies": {
-    "gulp-util": "~3.0.0",
-    "mkdirp": "~0.5.0",
-    "through2": "~0.5.1",
-    "async": "~0.9.0"
+    "gulp-util": "~3.0.6",
+    "mkdirp": "~0.5.1",
+    "through2": "~2.0.0",
+    "async": "~1.2.1"
   },
   "devDependencies": {
-    "chai": "~1.9.1",
+    "chai": "~3.0.0",
     "clear": "0.0.1",
-    "gulp": "~3.8.6",
-    "gulp-jshint": "~1.7.1",
-    "gulp-mocha": "~0.5.1",
-    "jshint-stylish": "~0.1.5",
+    "gulp": "~3.9.0",
+    "gulp-jshint": "~1.11.0",
+    "gulp-mocha": "~2.1.2",
+    "jshint-stylish": "~2.0.1",
     "mocha": "^2.2.5",
-    "rimraf": "~2.2.8"
+    "rimraf": "~2.4.0"
   },
   "main": "index.js"
 }
