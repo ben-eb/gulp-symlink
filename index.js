@@ -10,6 +10,7 @@ var through     = require('through2'),
     async       = require('async'),
     PluginError = gutil.PluginError,
     File        = gutil.File,
+    isWin       = process.platform === 'win32',
     debug;
 
 var PLUGIN_NAME = 'gulp-symlink';
@@ -130,7 +131,6 @@ var symlinker = function(destination, resolver, options) {
         ], function () {
           //this is a windows check as specified in http://nodejs.org/api/fs.html#fs_fs_symlink_srcpath_dstpath_type_callback
           fs.stat(source.path, function(err, stat) {
-
             if(err) {
               return errored.call(self, err, callback);
             }
@@ -138,16 +138,32 @@ var symlinker = function(destination, resolver, options) {
             source.stat = stat;
 
             fs.symlink(source.resolved, symlink.path, source.stat.isDirectory() ? 'dir' : 'file', function(err) {
-
-              if(err) {
-                return errored.call(self, err, callback);
-              } else {
+              var success = function(){
                 if (options.log) {
                   gutil.log(PLUGIN_NAME + ':' + gutil.colors.magenta(source.path), 'symlinked to', gutil.colors.magenta(symlink.path));
                 }
                 self.push(source);
                 return callback();
+              };
+
+              if(err) {
+                  if (!isWin || err.code !== 'EPERM') {
+                    return errored.call(self, err, callback);
+                  }
+
+                  // Try with type "junction" on Windows
+                  // Junctions behave equally to true symlinks and can be created in
+                  // non elevated terminal (well, not always..)
+                  fs.symlink(source.resolved, symlink.path, 'junction', function(err) {
+                    if (err) {
+                      return errored.call(self, err, callback);
+                    }
+
+                    return success();
+                  });
               }
+
+              return success();
 
             });
 
