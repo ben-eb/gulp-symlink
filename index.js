@@ -99,7 +99,7 @@ var symlinker = function(destination, resolver, options) {
 
       //No force option, we can't override!
       if(exists && !options.force) {
-        return errored.call(self, 'Destination file exists ('+destination+') - use force option to replace', callback);
+        return errored.call(self, 'Destination file exists ('+symlink.path+') - use force option to replace', callback);
       } else {
 
         async.waterfall([
