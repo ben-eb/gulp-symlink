@@ -154,7 +154,7 @@ var symlinker = function(destination, resolver, options) {
                   // Try with type "junction" on Windows
                   // Junctions behave equally to true symlinks and can be created in
                   // non elevated terminal (well, not always..)
-                  fs.symlink(source.resolved, symlink.path, 'junction', function(err) {
+                  fs.symlink(source.path, symlink.path, 'junction', function(err) {
                     if (err) {
                       return errored.call(self, err, callback);
                     }
