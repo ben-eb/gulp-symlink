@@ -1,4 +1,22 @@
-# [gulp](https://github.com/gulpjs/gulp)-symlink [![Build Status](https://travis-ci.org/ben-eb/gulp-symlink.svg?branch=master)](https://travis-ci.org/ben-eb/gulp-symlink) [![Build status](https://ci.appveyor.com/api/projects/status/29i8g8c2s20utpqa/branch/master?svg=true)](https://ci.appveyor.com/project/ben-eb/gulp-symlink/branch/master) [![Dependency Status](https://gemnasium.com/ben-eb/gulp-symlink.svg)](https://gemnasium.com/ben-eb/gulp-symlink)
+# Deprecation Notice
+
+gulp 4 adds built-in symlinks to the public API, making it really easy to
+create streams of symlinks. Therefore, this module has been deprecated.
+
+You may replace this module with a call to [vinyl-fs][vfs] for gulp 3.x:
+
+```js
+var vfs = require('vinyl-fs');
+
+gulp.task('symlink', function () {
+  return vfs.src('assets/some-large-video.mp4', {followSymlinks: false})
+  .pipe(vfs.symlink('build/videos'));
+});
+```
+
+[vfs]: https://github.com/gulpjs/vinyl-fs
+
+# [gulp](https://github.com/gulpjs/gulp)-symlink
 
 > Create symlinks during your gulp build.
 
